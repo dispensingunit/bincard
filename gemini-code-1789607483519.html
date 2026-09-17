@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Item Bin Card System - BRHMC</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        
+        /* Main Layout: Sidebar + Inputs + Preview */
+        .app-layout {
+            display: flex;
+            gap: 15px;
+            max-width: 1600px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        /* 1. SIDEBAR: Item Navigation & Search */
+        .sidebar {
+            flex: 0 0 280px;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-height: calc(100vh - 30px);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar h2 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #0056b3;
+            border-bottom: 2px solid #eef0f3;
+            padding-bottom: 8px;
+        }
+        .search-box {
+            margin-bottom: 12px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+            border: 1px solid #eef0f3;
+            border-radius: 4px;
+        }
+        .item-list li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-list li:hover {
+            background-color: #f8f9fa;
+        }
+        .item-list li.active {
+            background-color: #0056b3;
+            color: white;
+            font-weight: bold;
+        }
+        .item-list li .stock-tag {
+            font-size: 10px;
+            background: #eef4f8;
+            color: #0056b3;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .item-list li.active .stock-tag {
+            background: #ffffff;
+            color: #0056b3;
+        }
+        .btn-new-item {
+            width: 100%;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .btn-new-item:hover {
+            background-color: #004085;
+        }
+
+        /* 2. MIDDLE PANEL: Inputs */
+        .input-panel {
+            flex: 0 0 340px;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .input-panel h2 {
+            margin-top: 0;
+            font-size: 15px;
+            color: #0056b3;
+            border-bottom: 2px solid #eef0f3;
+            padding-bottom: 8px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 3px;
+            color: #555;
+        }
+        .form-group input, .form-group select {
+            padding: 7px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .form-row {
+            display: flex;
+            gap: 8px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .btn-add {
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        .btn-add:hover {
+            background-color: #218838;
+        }
+        .btn-delete-card {
+            width: 100%;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+            margin-top: 15px;
+        }
+
+        /* 3. RIGHT PANEL: Printable Preview */
+        .preview-panel {
+            flex: 1;
+            background: #ffffff;
+            padding: 0.5in;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 800px;
+        }
+        .preview-header-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .preview-sub-header {
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+        }
+
+        /* Header Info Section */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            margin-bottom: 15px;
+            border: 1px solid #000;
+            padding: 12px;
+            font-size: 12px;
+        }
+        .info-field {
+            display: flex;
+            align-items: center;
+        }
+        .info-field label {
+            font-weight: bold;
+            margin-right: 6px;
+            white-space: nowrap;
+        }
+        .info-field span {
+            border-bottom: 1px dotted #000;
+            flex: 1;
+            padding-left: 5px;
+            font-weight: bold;
+            color: #000;
+            min-height: 18px;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #000;
+        }
+        th, td {
+            padding: 8px 5px;
+            text-align: center;
+            font-size: 11px;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .balance-col {
+            font-weight: bold;
+        }
+        .no-records {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+            padding: 20px 0;
+        }
+
+        /* Delete Action Button */
+        .btn-delete-row {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .actions-bar {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .btn-print {
+            padding: 9px 18px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* -----------------------------------------------------------
+           PRINT SETTINGS: Tailored specifically for 8.5" x 13" Paper
+        ----------------------------------------------------------- */
+        @page {
+            size: 8.5in 13in;
+            margin: 0.5in;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .sidebar, .input-panel, .actions-bar, .action-column {
+                display: none !important;
+            }
+            .preview-panel {
+                box-shadow: none;
+                padding: 0;
+                width: 100%;
+                min-height: auto;
+                flex: none;
+            }
+            .app-layout {
+                display: block;
+            }
+            th {
+                background-color: #eaeaea !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+    
+    <!-- 1. SIDEBAR: SEARCH & ITEM LIST -->
+    <div class="sidebar">
+        <h2>Supplies Catalog</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Search item or stock no..." oninput="filterItems()">
+        </div>
+        <ul class="item-list" id="itemList">
+            <!-- Items rendered dynamically -->
+        </ul>
+        <button class="btn-new-item" onclick="addNewBinCard()">+ Create New Bin Card</button>
+    </div>
+
+    <!-- 2. MIDDLE PANEL: HEADER & TRANSACTION INPUTS -->
+    <div class="input-panel">
+        <h2>1. Item Details</h2>
+        <div class="form-group">
+            <label for="inputItemName">Item Name</label>
+            <input type="text" id="inputItemName" placeholder="e.g. Paracetamol 500mg Tab" oninput="saveCurrentHeaderDetails()">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="inputStockNo">Stock No.</label>
+                <input type="text" id="inputStockNo" placeholder="e.g. SN-2026-001" oninput="saveCurrentHeaderDetails()">
+            </div>
+            <div class="form-group">
+                <label for="inputReorderPoint">Re-Order Point</label>
+                <input type="number" id="inputReorderPoint" placeholder="e.g. 500" oninput="saveCurrentHeaderDetails()">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="inputConsignor">Consignor</label>
+            <input type="text" id="inputConsignor" placeholder="e.g. DOH / Supplier" oninput="saveCurrentHeaderDetails()">
+        </div>
+
+        <h2 style="margin-top: 15px;">2. Transaction Entry</h2>
+        <div class="form-group">
+            <label for="txType">Transaction Type</label>
+            <select id="txType" onchange="toggleFormMode()">
+                <option value="ISSUE">Issued Supply (Deduct)</option>
+                <option value="DELIVERY">Delivery / Receipt (Add)</option>
+                <option value="COUNT">Actual Physical Count (Set Balance)</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="txDate">Date</label>
+                <input type="date" id="txDate">
+            </div>
+            <div class="form-group">
+                <label for="txRef">Reference</label>
+                <input type="text" id="txRef" placeholder="RIS No.">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="txQty" id="qtyLabel">Issued Quantity</label>
+            <input type="number" id="txQty" placeholder="0" min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="txEndUser" id="endUserLabel">End-User</label>
+            <input type="text" id="txEndUser" placeholder="Ward / Department">
+        </div>
+
+        <div class="form-group" id="daysGroup">
+            <label for="txDays">No. of Days to Consume</label>
+            <input type="number" id="txDays" placeholder="0" min="0">
+        </div>
+
+        <button class="btn-add" onclick="addTransaction()">+ Add Entry</button>
+        <button class="btn-delete-card" onclick="deleteCurrentBinCard()">🗑️ Delete This Bin Card</button>
+    </div>
+
+    <!-- 3. RIGHT PANEL: 8.5" x 13" PRINTABLE PREVIEW -->
+    <div class="preview-panel">
+        <div class="preview-header-title">BIN CARD</div>
+        <div class="preview-sub-header">BICOL REGIONAL HOSPITAL & MEDICAL CENTER</div>
+
+        <!-- Header Area -->
+        <div class="info-grid">
+            <div class="info-field">
+                <label>ITEM NAME:</label>
+                <span id="displayItemName">-</span>
+            </div>
+            <div class="info-field">
+                <label>STOCK NO.:</label>
+                <span id="displayStockNo">-</span>
+            </div>
+            <div class="info-field">
+                <label>CONSIGNOR:</label>
+                <span id="displayConsignor">-</span>
+            </div>
+            <div class="info-field">
+                <label>RE-ORDER POINT:</label>
+                <span id="displayReorderPoint">-</span>
+            </div>
+        </div>
+
+        <!-- Table Area -->
+        <table id="binCardTable">
+            <thead>
+                <tr>
+                    <th style="width: 12%;">Date</th>
+                    <th style="width: 14%;">Reference</th>
+                    <th style="width: 11%;">Receipt Qty</th>
+                    <th style="width: 11%;">Qty</th>
+                    <th style="width: 20%;">End-User</th>
+                    <th style="width: 12%;">Balance Qty</th>
+                    <th style="width: 12%;">No. of Days to Consume</th>
+                    <th class="action-column" style="width: 8%;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr id="emptyRow">
+                    <td colspan="8" class="no-records">No transaction entries added yet.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="actions-bar">
+            <button class="btn-print" onclick="window.print()">🖨️ Print Active Bin Card (8.5" x 13")</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Global State for Multi-Item Store
+    let binCards = [];
+    let activeCardId = null;
+
+    // Load data on startup
+    window.onload = function() {
+        document.getElementById('txDate').valueAsDate = new Date();
+        loadFromStorage();
+        if (binCards.length === 0) {
+            addNewBinCard("New Supply Item");
+        } else {
+            selectBinCard(binCards[0].id);
+        }
+    };
+
+    // Storage Handling
+    function saveToStorage() {
+        localStorage.setItem('brhmc_bincards', JSON.stringify(binCards));
+    }
+
+    function loadFromStorage() {
+        const stored = localStorage.getItem('brhmc_bincards');
+        if (stored) {
+            try { binCards = JSON.parse(stored); } catch(e) { binCards = []; }
+        }
+    }
+
+    // Create New Bin Card
+    function addNewBinCard(defaultTitle = "") {
+        const newCard = {
+            id: Date.now(),
+            itemName: defaultTitle || "New Item",
+            stockNo: "",
+            reorderPoint: "",
+            consignor: "",
+            transactions: []
+        };
+        binCards.push(newCard);
+        saveToStorage();
+        renderSidebar();
+        selectBinCard(newCard.id);
+    }
+
+    // Select Active Bin Card
+    function selectBinCard(id) {
+        activeCardId = id;
+        renderSidebar();
+        const card = binCards.find(c => c.id === id);
+        if (!card) return;
+
+        // Populate Input Fields
+        document.getElementById('inputItemName').value = card.itemName || '';
+        document.getElementById('inputStockNo').value = card.stockNo || '';
+        document.getElementById('inputReorderPoint').value = card.reorderPoint || '';
+        document.getElementById('inputConsignor').value = card.consignor || '';
+
+        // Update Live Header Preview
+        updateHeaderPreview();
+
+        // Render Active Table Data
+        renderTable();
+    }
+
+    // Save Details from Left Form to Data Model
+    function saveCurrentHeaderDetails() {
+        const card = binCards.find(c => c.id === activeCardId);
+        if (!card) return;
+
+        card.itemName = document.getElementById('inputItemName').value;
+        card.stockNo = document.getElementById('inputStockNo').value;
+        card.reorderPoint = document.getElementById('inputReorderPoint').value;
+        card.consignor = document.getElementById('inputConsignor').value;
+
+        updateHeaderPreview();
+        renderSidebar();
+        saveToStorage();
+    }
+
+    function updateHeaderPreview() {
+        const card = binCards.find(c => c.id === activeCardId);
+        if (!card) return;
+
+        document.getElementById('displayItemName').innerText = card.itemName || '-';
+        document.getElementById('displayStockNo').innerText = card.stockNo || '-';
+        document.getElementById('displayConsignor').innerText = card.consignor || '-';
+        document.getElementById('displayReorderPoint').innerText = card.reorderPoint || '-';
+    }
+
+    // Toggle Form Modes
+    function toggleFormMode() {
+        const type = document.getElementById('txType').value;
+        const qtyLabel = document.getElementById('qtyLabel');
+        const endUserLabel = document.getElementById('endUserLabel');
+        const daysGroup = document.getElementById('daysGroup');
+
+        if (type === 'ISSUE') {
+            qtyLabel.innerText = "Issued Quantity";
+            endUserLabel.innerText = "End-User";
+            daysGroup.style.display = "flex";
+            document.getElementById('txEndUser').placeholder = "Ward / Department";
+        } else if (type === 'DELIVERY') {
+            qtyLabel.innerText = "Delivery / Receipt Quantity";
+            endUserLabel.innerText = "Supplier / Source";
+            daysGroup.style.display = "none";
+            document.getElementById('txEndUser').placeholder = "e.g. Supplier Name";
+        } else if (type === 'COUNT') {
+            qtyLabel.innerText = "Actual Physical Count";
+            endUserLabel.innerText = "Remarks / Recounted By";
+            daysGroup.style.display = "none";
+            document.getElementById('txEndUser').placeholder = "e.g. Physical Inventory";
+        }
+    }
+
+    // Add Transaction
+    function addTransaction() {
+        const card = binCards.find(c => c.id === activeCardId);
+        if (!card) return;
+
+        const type = document.getElementById('txType').value;
+        const date = document.getElementById('txDate').value;
+        const ref = document.getElementById('txRef').value || '-';
+        const qty = parseFloat(document.getElementById('txQty').value) || 0;
+        const endUser = document.getElementById('txEndUser').value || (type === 'COUNT' ? 'Physical Inventory' : '-');
+        const daysToConsume = (type === 'ISSUE') ? (document.getElementById('txDays').value || '-') : '-';
+
+        if (qty === 0 && type !== 'COUNT') {
+            alert("Please enter a valid Quantity.");
+            return;
+        }
+
+        let receiptQty = (type === 'DELIVERY') ? qty : 0;
+        let issuedQty = (type === 'ISSUE') ? qty : 0;
+
+        card.transactions.push({
+            id: Date.now(),
+            type,
+            date,
+            ref,
+            receiptQty,
+            issuedQty,
+            actualCount: type === 'COUNT' ? qty : null,
+            endUser,
+            daysToConsume
+        });
+
+        saveToStorage();
+        renderTable();
+
+        // Clear Form Inputs
+        document.getElementById('txRef').value = '';
+        document.getElementById('txQty').value = '';
+        document.getElementById('txEndUser').value = '';
+        document.getElementById('txDays').value = '';
+    }
+
+    // Delete Single Entry
+    function deleteTransaction(txId) {
+        const card = binCards.find(c => c.id === activeCardId);
+        if (!card) return;
+
+        if (confirm("Delete this transaction entry? Balances will be recalculated.")) {
+            card.transactions = card.transactions.filter(t => t.id !== txId);
+            saveToStorage();
+            renderTable();
+        }
+    }
+
+    // Delete Active Bin Card
+    function deleteCurrentBinCard() {
+        if (binCards.length <= 1) {
+            alert("You must keep at least one Bin Card in your system.");
+            return;
+        }
+
+        if (confirm("Are you sure you want to completely delete this Bin Card and all its entries?")) {
+            binCards = binCards.filter(c => c.id !== activeCardId);
+            saveToStorage();
+            selectBinCard(binCards[0].id);
+        }
+    }
+
+    // Render Sidebar List with Search Filter
+    function renderSidebar() {
+        const itemList = document.getElementById('itemList');
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        itemList.innerHTML = '';
+
+        binCards.forEach(card => {
+            const name = card.itemName || 'Untitled Item';
+            const stock = card.stockNo || 'No Stock No.';
+
+            if (name.toLowerCase().includes(searchTerm) || stock.toLowerCase().includes(searchTerm)) {
+                const li = document.createElement('li');
+                if (card.id === activeCardId) li.className = 'active';
+                li.onclick = () => selectBinCard(card.id);
+
+                li.innerHTML = `
+                    <span>${name}</span>
+                    <span class="stock-tag">${stock}</span>
+                `;
+                itemList.appendChild(li);
+            }
+        });
+    }
+
+    function filterItems() {
+        renderSidebar();
+    }
+
+    // Render Preview Table & Recalculate Continuous Balances
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        const card = binCards.find(c => c.id === activeCardId);
+        if (!card || card.transactions.length === 0) {
+            tbody.innerHTML = `
+                <tr id="emptyRow">
+                    <td colspan="8" class="no-records">No transaction entries added yet.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        let runningBalance = 0;
+
+        card.transactions.forEach((item) => {
+            if (item.type === 'COUNT') {
+                runningBalance = item.actualCount;
+            } else {
+                runningBalance = runningBalance + item.receiptQty - item.issuedQty;
+            }
+
+            const row = document.createElement('tr');
+            let displayReceipt = item.receiptQty > 0 ? item.receiptQty : '';
+            let displayIssued = item.issuedQty > 0 ? item.issuedQty : '';
+            let displayEndUser = item.endUser;
+
+            if (item.type === 'COUNT') {
+                displayEndUser = `<strong>[ACTUAL COUNT]</strong> ${item.endUser}`;
+            }
+
+            row.innerHTML = `
+                <td>${item.date}</td>
+                <td>${item.ref}</td>
+                <td>${displayReceipt}</td>
+                <td>${displayIssued}</td>
+                <td>${displayEndUser}</td>
+                <td class="balance-col">${runningBalance}</td>
+                <td>${item.daysToConsume}</td>
+                <td class="action-column">
+                    <button class="btn-delete-row" onclick="deleteTransaction(${item.id})">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+</script>
+
+</body>
+</html>
